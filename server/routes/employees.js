@@ -1,5 +1,5 @@
 import express from "express";
-import { pool } from "../database/init.js";
+import prisma from "../database/prisma.js";
 import { authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -7,16 +7,25 @@ const router = express.Router();
 // Apply authentication to all routes
 router.use(authenticateToken);
 
+const formatEmployee = (e) => ({
+  id: e.id,
+  garage_id: e.garageId,
+  name: e.name,
+  phone: e.phone,
+  role: e.role,
+  created_at: e.createdAt,
+});
+
 // Get all employees for the authenticated garage
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM employees WHERE garage_id = $1 ORDER BY name",
-      [req.user.garageId],
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Server error:", error);
+    const employees = await prisma.employee.findMany({
+      where: { garageId: req.user.garageId },
+      orderBy: { name: "asc" },
+    });
+    res.json(employees.map(formatEmployee));
+  } catch (_error) {
+    console.error("Server error:", _error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -24,16 +33,15 @@ router.get("/", async (req, res) => {
 // Get employee by ID (only if belongs to authenticated garage)
 router.get("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM employees WHERE id = $1 AND garage_id = $2",
-      [req.params.id, req.user.garageId],
-    );
-    if (result.rows.length === 0) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: Number(req.params.id), garageId: req.user.garageId },
+    });
+    if (!employee) {
       return res.status(404).json({ error: "Employee not found" });
     }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Server error:", error);
+    res.json(formatEmployee(employee));
+  } catch (_error) {
+    console.error("Server error:", _error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -45,13 +53,17 @@ router.post("/", async (req, res) => {
     if (!name) {
       return res.status(400).json({ error: "Name is required" });
     }
-    const result = await pool.query(
-      "INSERT INTO employees (garage_id, name, phone, role) VALUES ($1, $2, $3, $4) RETURNING *",
-      [req.user.garageId, name, phone, role || "Mechanic"],
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Server error:", error);
+    const employee = await prisma.employee.create({
+      data: {
+        garageId: req.user.garageId,
+        name,
+        phone,
+        role: role || "Mechanic",
+      },
+    });
+    res.status(201).json(formatEmployee(employee));
+  } catch (_error) {
+    console.error("Server error:", _error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -63,16 +75,19 @@ router.put("/:id", async (req, res) => {
     if (!name) {
       return res.status(400).json({ error: "Name is required" });
     }
-    const result = await pool.query(
-      "UPDATE employees SET name = $1, phone = $2, role = $3 WHERE id = $4 AND garage_id = $5 RETURNING *",
-      [name, phone, role, req.params.id, req.user.garageId],
-    );
-    if (result.rows.length === 0) {
+    const existing = await prisma.employee.findFirst({
+      where: { id: Number(req.params.id), garageId: req.user.garageId },
+    });
+    if (!existing) {
       return res.status(404).json({ error: "Employee not found" });
     }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Server error:", error);
+    const employee = await prisma.employee.update({
+      where: { id: Number(req.params.id) },
+      data: { name, phone, role },
+    });
+    res.json(formatEmployee(employee));
+  } catch (_error) {
+    console.error("Server error:", _error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -80,16 +95,16 @@ router.put("/:id", async (req, res) => {
 // Delete employee (only if belongs to authenticated garage)
 router.delete("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "DELETE FROM employees WHERE id = $1 AND garage_id = $2 RETURNING id",
-      [req.params.id, req.user.garageId],
-    );
-    if (result.rows.length === 0) {
+    const existing = await prisma.employee.findFirst({
+      where: { id: Number(req.params.id), garageId: req.user.garageId },
+    });
+    if (!existing) {
       return res.status(404).json({ error: "Employee not found" });
     }
+    await prisma.employee.delete({ where: { id: Number(req.params.id) } });
     res.json({ message: "Employee deleted" });
-  } catch (error) {
-    console.error("Server error:", error);
+  } catch (_error) {
+    console.error("Server error:", _error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

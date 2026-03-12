@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Garage {
+  id                  Int          @id @default(autoincrement())
+  name                String
+  email               String       @unique
+  phone               String?
+  address             String?
+  isActive            Boolean      @default(true)  @map("is_active")
+  subscriptionStatus  String       @default("trial") @map("subscription_status")
+  createdAt           DateTime     @default(now()) @map("created_at")
+
+  users       User[]
+  clients     Client[]
+  cars        Car[]
+  employees   Employee[]
+  workOrders  WorkOrder[]
+  services    Service[]
+
+  @@map("garages")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  garageId     Int      @map("garage_id")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         String   @default("admin")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  garage Garage @relation(fields: [garageId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+model Client {
+  id        Int      @id @default(autoincrement())
+  garageId  Int      @map("garage_id")
+  name      String
+  phone     String
+  email     String?
+  address   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  garage     Garage      @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  cars       Car[]
+  workOrders WorkOrder[]
+
+  @@map("clients")
+}
+
+model Car {
+  id        Int      @id @default(autoincrement())
+  garageId  Int      @map("garage_id")
+  plate     String
+  brand     String
+  model     String
+  year      Int?
+  clientId  Int      @map("client_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  garage     Garage      @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  client     Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  workOrders WorkOrder[]
+
+  @@unique([garageId, plate])
+  @@map("cars")
+}
+
+model Employee {
+  id        Int      @id @default(autoincrement())
+  garageId  Int      @map("garage_id")
+  name      String
+  phone     String?
+  role      String   @default("Mechanic")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  garage     Garage      @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  workOrders WorkOrder[]
+
+  @@map("employees")
+}
+
+model WorkOrder {
+  id            Int       @id @default(autoincrement())
+  garageId      Int       @map("garage_id")
+  billNumber    String    @map("bill_number")
+  carId         Int       @map("car_id")
+  clientId      Int       @map("client_id")
+  employeeId    Int       @map("employee_id")
+  startDatetime DateTime  @map("start_datetime")
+  endDatetime   DateTime? @map("end_datetime")
+  totalCost     Decimal   @default(0) @map("total_cost") @db.Decimal(10, 2)
+  status        String    @default("in_progress")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  garage   Garage   @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  car      Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  services Service[]
+
+  @@unique([garageId, billNumber])
+  @@map("work_orders")
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  garageId    Int      @map("garage_id")
+  workOrderId Int      @map("work_order_id")
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalPrice  Decimal  @map("total_price") @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  garage    Garage    @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@map("services")
+}
+

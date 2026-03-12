@@ -1,5 +1,5 @@
 import express from "express";
-import { pool } from "../database/init.js";
+import prisma from "../database/prisma.js";
 import { authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -7,160 +7,146 @@ const router = express.Router();
 // Apply authentication to all routes
 router.use(authenticateToken);
 
+const formatService = (s) => ({
+  id: s.id,
+  garage_id: s.garageId,
+  work_order_id: s.workOrderId,
+  description: s.description,
+  quantity: s.quantity,
+  unit_price: s.unitPrice,
+  total_price: s.totalPrice,
+  created_at: s.createdAt,
+});
+
 // Get services for a work order (only if belongs to authenticated garage)
 router.get("/work-order/:workOrderId", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM services WHERE work_order_id = $1 AND garage_id = $2",
-      [req.params.workOrderId, req.user.garageId],
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Server error:", error);
+    const services = await prisma.service.findMany({
+      where: {
+        workOrderId: Number(req.params.workOrderId),
+        garageId: req.user.garageId,
+      },
+    });
+    res.json(services.map(formatService));
+  } catch (_error) {
+    console.error("Server error:", _error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Add service to work order (automatically assigned to authenticated garage)
 router.post("/", async (req, res) => {
-  const client = await pool.connect();
   try {
-    await client.query("BEGIN");
-
     const { work_order_id, description, quantity, unit_price } = req.body;
     if (!work_order_id || !description || !quantity || !unit_price) {
-      await client.query("ROLLBACK");
-      client.release();
       return res.status(400).json({
         error: "Work order, description, quantity, and unit price are required",
       });
     }
-    const total_price = quantity * unit_price;
+    const garageId = req.user.garageId;
+    const workOrderId = Number(work_order_id);
+    const totalPrice = Number(quantity) * Number(unit_price);
 
-    const serviceResult = await client.query(
-      "INSERT INTO services (garage_id, work_order_id, description, quantity, unit_price, total_price) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [
-        req.user.garageId,
-        work_order_id,
-        description,
-        quantity,
-        unit_price,
-        total_price,
-      ],
-    );
+    const service = await prisma.$transaction(async (tx) => {
+      const svc = await tx.service.create({
+        data: {
+          garageId,
+          workOrderId,
+          description,
+          quantity: Number(quantity),
+          unitPrice: Number(unit_price),
+          totalPrice,
+        },
+      });
+      const agg = await tx.service.aggregate({
+        _sum: { totalPrice: true },
+        where: { workOrderId, garageId },
+      });
+      await tx.workOrder.update({
+        where: { id: workOrderId },
+        data: { totalCost: agg._sum.totalPrice ?? 0 },
+      });
+      return svc;
+    });
 
-    // Update work order total cost (only for this garage)
-    const totalCostResult = await client.query(
-      "SELECT SUM(total_price) as total FROM services WHERE work_order_id = $1 AND garage_id = $2",
-      [work_order_id, req.user.garageId],
-    );
-
-    await client.query(
-      "UPDATE work_orders SET total_cost = $1 WHERE id = $2 AND garage_id = $3",
-      [totalCostResult.rows[0].total, work_order_id, req.user.garageId],
-    );
-
-    await client.query("COMMIT");
-    res.status(201).json(serviceResult.rows[0]);
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Server error:", error);
+    res.status(201).json(formatService(service));
+  } catch (_error) {
+    console.error("Server error:", _error);
     res.status(500).json({ error: "Internal server error" });
-  } finally {
-    client.release();
   }
 });
 
 // Update service (only if belongs to authenticated garage)
 router.put("/:id", async (req, res) => {
-  const client = await pool.connect();
   try {
-    await client.query("BEGIN");
-
     const { description, quantity, unit_price, work_order_id } = req.body;
-    const total_price = quantity * unit_price;
+    const garageId = req.user.garageId;
+    const workOrderId = Number(work_order_id);
+    const totalPrice = Number(quantity) * Number(unit_price);
 
-    const serviceResult = await client.query(
-      "UPDATE services SET description = $1, quantity = $2, unit_price = $3, total_price = $4 WHERE id = $5 AND garage_id = $6 RETURNING *",
-      [
-        description,
-        quantity,
-        unit_price,
-        total_price,
-        req.params.id,
-        req.user.garageId,
-      ],
-    );
-
-    if (serviceResult.rows.length === 0) {
-      await client.query("ROLLBACK");
+    const existing = await prisma.service.findFirst({
+      where: { id: Number(req.params.id), garageId },
+    });
+    if (!existing) {
       return res.status(404).json({ error: "Service not found" });
     }
 
-    // Update work order total cost (only for this garage)
-    const totalCostResult = await client.query(
-      "SELECT SUM(total_price) as total FROM services WHERE work_order_id = $1 AND garage_id = $2",
-      [work_order_id, req.user.garageId],
-    );
+    const service = await prisma.$transaction(async (tx) => {
+      const svc = await tx.service.update({
+        where: { id: Number(req.params.id) },
+        data: {
+          description,
+          quantity: Number(quantity),
+          unitPrice: Number(unit_price),
+          totalPrice,
+        },
+      });
+      const agg = await tx.service.aggregate({
+        _sum: { totalPrice: true },
+        where: { workOrderId, garageId },
+      });
+      await tx.workOrder.update({
+        where: { id: workOrderId },
+        data: { totalCost: agg._sum.totalPrice ?? 0 },
+      });
+      return svc;
+    });
 
-    await client.query(
-      "UPDATE work_orders SET total_cost = $1 WHERE id = $2 AND garage_id = $3",
-      [totalCostResult.rows[0].total, work_order_id, req.user.garageId],
-    );
-
-    await client.query("COMMIT");
-    res.json(serviceResult.rows[0]);
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Server error:", error);
+    res.json(formatService(service));
+  } catch (_error) {
+    console.error("Server error:", _error);
     res.status(500).json({ error: "Internal server error" });
-  } finally {
-    client.release();
   }
 });
 
 // Delete service (only if belongs to authenticated garage)
 router.delete("/:id", async (req, res) => {
-  const client = await pool.connect();
   try {
-    await client.query("BEGIN");
-
-    const serviceResult = await client.query(
-      "SELECT work_order_id FROM services WHERE id = $1 AND garage_id = $2",
-      [req.params.id, req.user.garageId],
-    );
-
-    if (serviceResult.rows.length === 0) {
-      await client.query("ROLLBACK");
+    const garageId = req.user.garageId;
+    const existing = await prisma.service.findFirst({
+      where: { id: Number(req.params.id), garageId },
+    });
+    if (!existing) {
       return res.status(404).json({ error: "Service not found" });
     }
+    const workOrderId = existing.workOrderId;
 
-    const work_order_id = serviceResult.rows[0].work_order_id;
+    await prisma.$transaction(async (tx) => {
+      await tx.service.delete({ where: { id: Number(req.params.id) } });
+      const agg = await tx.service.aggregate({
+        _sum: { totalPrice: true },
+        where: { workOrderId, garageId },
+      });
+      await tx.workOrder.update({
+        where: { id: workOrderId },
+        data: { totalCost: agg._sum.totalPrice ?? 0 },
+      });
+    });
 
-    await client.query(
-      "DELETE FROM services WHERE id = $1 AND garage_id = $2",
-      [req.params.id, req.user.garageId],
-    );
-
-    // Update work order total cost (only for this garage)
-    const totalCostResult = await client.query(
-      "SELECT COALESCE(SUM(total_price), 0) as total FROM services WHERE work_order_id = $1 AND garage_id = $2",
-      [work_order_id, req.user.garageId],
-    );
-
-    await client.query(
-      "UPDATE work_orders SET total_cost = $1 WHERE id = $2 AND garage_id = $3",
-      [totalCostResult.rows[0].total, work_order_id, req.user.garageId],
-    );
-
-    await client.query("COMMIT");
     res.json({ message: "Service deleted" });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Server error:", error);
+  } catch (_error) {
+    console.error("Server error:", _error);
     res.status(500).json({ error: "Internal server error" });
-  } finally {
-    client.release();
   }
 });
 

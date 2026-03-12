@@ -1,5 +1,5 @@
 import express from "express";
-import { pool } from "../database/init.js";
+import prisma from "../database/prisma.js";
 import { authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -7,16 +7,26 @@ const router = express.Router();
 // Apply authentication to all routes
 router.use(authenticateToken);
 
+const formatClient = (c) => ({
+  id: c.id,
+  garage_id: c.garageId,
+  name: c.name,
+  phone: c.phone,
+  email: c.email,
+  address: c.address,
+  created_at: c.createdAt,
+});
+
 // Get all clients for the authenticated garage
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM clients WHERE garage_id = $1 ORDER BY name",
-      [req.user.garageId],
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error fetching clients:", error);
+    const clients = await prisma.client.findMany({
+      where: { garageId: req.user.garageId },
+      orderBy: { name: "asc" },
+    });
+    res.json(clients.map(formatClient));
+  } catch (_error) {
+    console.error("Error fetching clients:", _error);
     res.status(500).json({ error: "Failed to fetch clients" });
   }
 });
@@ -24,20 +34,28 @@ router.get("/", async (req, res) => {
 // Get client by ID with their cars (only if belongs to authenticated garage)
 router.get("/:id", async (req, res) => {
   try {
-    const clientResult = await pool.query(
-      "SELECT * FROM clients WHERE id = $1 AND garage_id = $2",
-      [req.params.id, req.user.garageId],
-    );
-    if (clientResult.rows.length === 0) {
+    const client = await prisma.client.findFirst({
+      where: { id: Number(req.params.id), garageId: req.user.garageId },
+      include: { cars: { where: { garageId: req.user.garageId } } },
+    });
+    if (!client) {
       return res.status(404).json({ error: "Client not found" });
     }
-    const carsResult = await pool.query(
-      "SELECT * FROM cars WHERE client_id = $1 AND garage_id = $2",
-      [req.params.id, req.user.garageId],
-    );
-    res.json({ ...clientResult.rows[0], cars: carsResult.rows });
-  } catch (error) {
-    console.error("Error fetching client:", error);
+    res.json({
+      ...formatClient(client),
+      cars: client.cars.map((car) => ({
+        id: car.id,
+        garage_id: car.garageId,
+        client_id: car.clientId,
+        plate: car.plate,
+        brand: car.brand,
+        model: car.model,
+        year: car.year,
+        created_at: car.createdAt,
+      })),
+    });
+  } catch (_error) {
+    console.error("Error fetching client:", _error);
     res.status(500).json({ error: "Failed to fetch client" });
   }
 });
@@ -49,13 +67,12 @@ router.post("/", async (req, res) => {
     if (!name || !phone) {
       return res.status(400).json({ error: "Name and phone are required" });
     }
-    const result = await pool.query(
-      "INSERT INTO clients (garage_id, name, phone, email, address) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [req.user.garageId, name, phone, email, address],
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error creating client:", error);
+    const client = await prisma.client.create({
+      data: { garageId: req.user.garageId, name, phone, email, address },
+    });
+    res.status(201).json(formatClient(client));
+  } catch (_error) {
+    console.error("Error creating client:", _error);
     res.status(500).json({ error: "Failed to create client" });
   }
 });
@@ -67,16 +84,19 @@ router.put("/:id", async (req, res) => {
     if (!name || !phone) {
       return res.status(400).json({ error: "Name and phone are required" });
     }
-    const result = await pool.query(
-      "UPDATE clients SET name = $1, phone = $2, email = $3, address = $4 WHERE id = $5 AND garage_id = $6 RETURNING *",
-      [name, phone, email, address, req.params.id, req.user.garageId],
-    );
-    if (result.rows.length === 0) {
+    const existing = await prisma.client.findFirst({
+      where: { id: Number(req.params.id), garageId: req.user.garageId },
+    });
+    if (!existing) {
       return res.status(404).json({ error: "Client not found" });
     }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error updating client:", error);
+    const client = await prisma.client.update({
+      where: { id: Number(req.params.id) },
+      data: { name, phone, email, address },
+    });
+    res.json(formatClient(client));
+  } catch (_error) {
+    console.error("Error updating client:", _error);
     res.status(500).json({ error: "Failed to update client" });
   }
 });
@@ -84,16 +104,16 @@ router.put("/:id", async (req, res) => {
 // Delete client (only if belongs to authenticated garage)
 router.delete("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "DELETE FROM clients WHERE id = $1 AND garage_id = $2 RETURNING id",
-      [req.params.id, req.user.garageId],
-    );
-    if (result.rows.length === 0) {
+    const existing = await prisma.client.findFirst({
+      where: { id: Number(req.params.id), garageId: req.user.garageId },
+    });
+    if (!existing) {
       return res.status(404).json({ error: "Client not found" });
     }
+    await prisma.client.delete({ where: { id: Number(req.params.id) } });
     res.json({ message: "Client deleted" });
-  } catch (error) {
-    console.error("Error deleting client:", error);
+  } catch (_error) {
+    console.error("Error deleting client:", _error);
     res.status(500).json({ error: "Failed to delete client" });
   }
 });

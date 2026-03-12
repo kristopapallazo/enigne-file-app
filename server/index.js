@@ -5,7 +5,7 @@ import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { initDatabase } from "./database/init.js";
+import prisma from "./database/prisma.js";
 import authRouter from "./routes/auth.js";
 import clientsRouter from "./routes/clients.js";
 import carsRouter from "./routes/cars.js";
@@ -26,7 +26,7 @@ const PORT = process.env.PORT || 3001;
 app.use(helmet());
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim())
-  : ["http://localhost:5173"];
+  : [/^http:\/\/localhost:\d+$/];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
 
@@ -39,10 +39,10 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Initialize database and start server
+// Initialize database connection and start server
 async function startServer() {
   try {
-    await initDatabase();
+    await prisma.$connect();
 
     // Routes
     app.use("/api/auth", authLimiter, authRouter);
@@ -73,3 +73,13 @@ async function startServer() {
 }
 
 startServer();
+
+process.on("SIGINT", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
