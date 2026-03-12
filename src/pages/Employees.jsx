@@ -19,7 +19,7 @@ function Employees() {
     try {
       const response = await employeesApi.getAll();
       setEmployees(response.data);
-    } catch (error) {
+    } catch (_error) {
       message.error('Failed to load employees');
     } finally {
       setLoading(false);
@@ -43,7 +43,7 @@ function Employees() {
       await employeesApi.delete(id);
       message.success('Employee deleted successfully');
       loadEmployees();
-    } catch (error) {
+    } catch (_error) {
       message.error('Failed to delete employee');
     }
   };
@@ -59,7 +59,7 @@ function Employees() {
       }
       setModalVisible(false);
       loadEmployees();
-    } catch (error) {
+    } catch (_error) {
       message.error('Failed to save employee');
     }
   };

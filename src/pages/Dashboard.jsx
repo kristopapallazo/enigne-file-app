@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, Table, Tag } from 'antd';
-import { CarOutlined, UserOutlined, FileTextOutlined, ToolOutlined } from '@ant-design/icons';
-import { workOrdersApi, clientsApi, carsApi, employeesApi } from '../api';
-import dayjs from 'dayjs';
+import { useState, useEffect } from "react";
+import { Card, Row, Col, Statistic, Table, Tag } from "antd";
+import {
+  CarOutlined,
+  UserOutlined,
+  FileTextOutlined,
+  ToolOutlined,
+} from "@ant-design/icons";
+import { workOrdersApi, clientsApi, carsApi, employeesApi } from "../api";
+import dayjs from "dayjs";
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -14,68 +19,81 @@ function Dashboard() {
   const [recentWorkOrders, setRecentWorkOrders] = useState([]);
 
   useEffect(() => {
-    loadData();
+    let cancelled = false;
+
+    const fetchData = async () => {
+      try {
+        const [clients, cars, employees, workOrders] = await Promise.all([
+          clientsApi.getAll(),
+          carsApi.getAll(),
+          employeesApi.getAll(),
+          workOrdersApi.getAll(),
+        ]);
+
+        if (!cancelled) {
+          setStats({
+            totalClients: clients.data.length,
+            totalCars: cars.data.length,
+            totalEmployees: employees.data.length,
+            activeWorkOrders: workOrders.data.filter(
+              (wo) => wo.status === "in_progress",
+            ).length,
+          });
+
+          setRecentWorkOrders(workOrders.data.slice(0, 5));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Error loading dashboard data:", error);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  const loadData = async () => {
-    try {
-      const [clients, cars, employees, workOrders] = await Promise.all([
-        clientsApi.getAll(),
-        carsApi.getAll(),
-        employeesApi.getAll(),
-        workOrdersApi.getAll(),
-      ]);
-
-      setStats({
-        totalClients: clients.data.length,
-        totalCars: cars.data.length,
-        totalEmployees: employees.data.length,
-        activeWorkOrders: workOrders.data.filter(wo => wo.status === 'in_progress').length,
-      });
-
-      setRecentWorkOrders(workOrders.data.slice(0, 5));
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    }
-  };
 
   const columns = [
     {
-      title: 'Bill #',
-      dataIndex: 'bill_number',
-      key: 'bill_number',
+      title: "Bill #",
+      dataIndex: "bill_number",
+      key: "bill_number",
     },
     {
-      title: 'Client',
-      dataIndex: 'client_name',
-      key: 'client_name',
+      title: "Client",
+      dataIndex: "client_name",
+      key: "client_name",
     },
     {
-      title: 'Car',
-      key: 'car',
-      render: (_, record) => `${record.plate} - ${record.brand} ${record.model}`,
+      title: "Car",
+      key: "car",
+      render: (_, record) =>
+        `${record.plate} - ${record.brand} ${record.model}`,
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
       render: (status) => (
-        <Tag color={status === 'completed' ? 'green' : 'blue'}>
-          {status === 'in_progress' ? 'In Progress' : 'Completed'}
+        <Tag color={status === "completed" ? "green" : "blue"}>
+          {status === "in_progress" ? "In Progress" : "Completed"}
         </Tag>
       ),
     },
     {
-      title: 'Start Date',
-      dataIndex: 'start_datetime',
-      key: 'start_datetime',
-      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      title: "Start Date",
+      dataIndex: "start_datetime",
+      key: "start_datetime",
+      render: (date) => dayjs(date).format("DD/MM/YYYY HH:mm"),
     },
     {
-      title: 'Total Cost',
-      dataIndex: 'total_cost',
-      key: 'total_cost',
-      render: (cost) => `$${cost?.toFixed(2) || '0.00'}`,
+      title: "Total Cost",
+      dataIndex: "total_cost",
+      key: "total_cost",
+      render: (cost) => `$${parseFloat(cost || 0).toFixed(2)}`,
     },
   ];
 
@@ -89,7 +107,7 @@ function Dashboard() {
               title="Total Clients"
               value={stats.totalClients}
               prefix={<UserOutlined />}
-              valueStyle={{ color: '#3f8600' }}
+              valueStyle={{ color: "#3f8600" }}
             />
           </Card>
         </Col>
@@ -99,7 +117,7 @@ function Dashboard() {
               title="Total Cars"
               value={stats.totalCars}
               prefix={<CarOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              valueStyle={{ color: "#1890ff" }}
             />
           </Card>
         </Col>
@@ -109,7 +127,7 @@ function Dashboard() {
               title="Employees"
               value={stats.totalEmployees}
               prefix={<ToolOutlined />}
-              valueStyle={{ color: '#cf1322' }}
+              valueStyle={{ color: "#cf1322" }}
             />
           </Card>
         </Col>
@@ -119,7 +137,7 @@ function Dashboard() {
               title="Active Work Orders"
               value={stats.activeWorkOrders}
               prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#faad14' }}
+              valueStyle={{ color: "#faad14" }}
             />
           </Card>
         </Col>

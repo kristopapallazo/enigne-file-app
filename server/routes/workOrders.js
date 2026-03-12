@@ -24,7 +24,8 @@ router.get('/', async (req, res) => {
     `, [req.user.garageId]);
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -53,7 +54,8 @@ router.get('/:id', async (req, res) => {
     );
     res.json({ ...workOrderResult.rows[0], services: servicesResult.rows });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -61,13 +63,28 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { bill_number, car_id, client_id, employee_id, start_datetime, notes } = req.body;
+    if (!bill_number || !car_id || !client_id || !employee_id || !start_datetime) {
+      return res.status(400).json({ error: 'Bill number, car, client, employee, and start date are required' });
+    }
+
+    // Verify all referenced entities belong to the current garage
+    const [carCheck, clientCheck, employeeCheck] = await Promise.all([
+      pool.query('SELECT id FROM cars WHERE id = $1 AND garage_id = $2', [car_id, req.user.garageId]),
+      pool.query('SELECT id FROM clients WHERE id = $1 AND garage_id = $2', [client_id, req.user.garageId]),
+      pool.query('SELECT id FROM employees WHERE id = $1 AND garage_id = $2', [employee_id, req.user.garageId]),
+    ]);
+    if (carCheck.rows.length === 0) return res.status(404).json({ error: 'Car not found' });
+    if (clientCheck.rows.length === 0) return res.status(404).json({ error: 'Client not found' });
+    if (employeeCheck.rows.length === 0) return res.status(404).json({ error: 'Employee not found' });
+
     const result = await pool.query(
       'INSERT INTO work_orders (garage_id, bill_number, car_id, client_id, employee_id, start_datetime, notes) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
       [req.user.garageId, bill_number, car_id, client_id, employee_id, start_datetime, notes]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -84,7 +101,8 @@ router.put('/:id', async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -100,7 +118,8 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'Work order deleted' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

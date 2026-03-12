@@ -1,12 +1,12 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { authApi } from '../api';
+import { createContext, useContext, useState, useEffect } from "react";
+import { authApi } from "../api";
 
 const AuthContext = createContext(null);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -19,15 +19,15 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check if user is already logged in on mount
     const initAuth = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (token) {
         try {
           const response = await authApi.me();
           setUser(response.data.user);
           setGarage(response.data.garage);
         } catch (error) {
-          console.error('Failed to restore session:', error);
-          localStorage.removeItem('token');
+          console.error("Failed to restore session:", error);
+          localStorage.removeItem("token");
         }
       }
       setLoading(false);
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authApi.login({ email, password });
       const { token, user, garage } = response.data;
 
-      localStorage.setItem('token', token);
+      localStorage.setItem("token", token);
       setUser(user);
       setGarage(garage);
 
@@ -49,15 +49,33 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Login failed'
+        error: error.response?.data?.error || "Login failed",
       };
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
     setUser(null);
     setGarage(null);
+  };
+
+  const signup = async (garageData) => {
+    try {
+      const response = await authApi.register(garageData);
+      const { token, user, garage } = response.data;
+
+      localStorage.setItem("token", token);
+      setUser(user);
+      setGarage(garage);
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || "Registration failed",
+      };
+    }
   };
 
   const value = {
@@ -66,6 +84,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     isAuthenticated: !!user,
     login,
+    signup,
     logout,
   };
 

@@ -1,5 +1,5 @@
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Layout, Menu, Button, Dropdown } from 'antd';
+import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { Layout, Menu, Button, Dropdown } from "antd";
 import {
   CarOutlined,
   UserOutlined,
@@ -7,17 +7,18 @@ import {
   FileTextOutlined,
   DashboardOutlined,
   LogoutOutlined,
-} from '@ant-design/icons';
-import { useAuth } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Clients from './pages/Clients';
-import Cars from './pages/Cars';
-import Employees from './pages/Employees';
-import WorkOrders from './pages/WorkOrders';
-import WorkOrderDetail from './pages/WorkOrderDetail';
-import './App.css';
+} from "@ant-design/icons";
+import { useAuth } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
+import Clients from "./pages/Clients";
+import Cars from "./pages/Cars";
+import Employees from "./pages/Employees";
+import WorkOrders from "./pages/WorkOrders";
+import WorkOrderDetail from "./pages/WorkOrderDetail";
+import "./App.css";
 
 const { Header, Sider, Content } = Layout;
 
@@ -27,27 +28,27 @@ function MainLayout() {
 
   const menuItems = [
     {
-      key: '/',
+      key: "/",
       icon: <DashboardOutlined />,
       label: <Link to="/">Dashboard</Link>,
     },
     {
-      key: '/work-orders',
+      key: "/work-orders",
       icon: <FileTextOutlined />,
       label: <Link to="/work-orders">Work Orders</Link>,
     },
     {
-      key: '/cars',
+      key: "/cars",
       icon: <CarOutlined />,
       label: <Link to="/cars">Cars</Link>,
     },
     {
-      key: '/clients',
+      key: "/clients",
       icon: <UserOutlined />,
       label: <Link to="/clients">Clients</Link>,
     },
     {
-      key: '/employees',
+      key: "/employees",
       icon: <TeamOutlined />,
       label: <Link to="/employees">Employees</Link>,
     },
@@ -55,25 +56,27 @@ function MainLayout() {
 
   const userMenuItems = [
     {
-      key: 'logout',
+      key: "logout",
       icon: <LogoutOutlined />,
-      label: 'Logout',
+      label: "Logout",
       onClick: logout,
     },
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: "100vh" }}>
       <Sider breakpoint="lg" collapsedWidth="0">
-        <div style={{
-          height: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '20px',
-          fontWeight: 'bold'
-        }}>
+        <div
+          style={{
+            height: 64,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            fontSize: "20px",
+            fontWeight: "bold",
+          }}
+        >
           🚗 Garage
         </div>
         <Menu
@@ -84,27 +87,38 @@ function MainLayout() {
         />
       </Sider>
       <Layout>
-        <Header style={{
-          background: '#fff',
-          padding: '0 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+        <Header
+          style={{
+            background: "#fff",
+            padding: "0 24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ fontSize: "24px", fontWeight: "bold" }}>
             Car Garage Management System
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ textAlign: 'right' }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div style={{ textAlign: "right" }}>
               <div style={{ fontWeight: 500 }}>{user?.name}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>{garage?.name}</div>
+              <div style={{ fontSize: "12px", color: "#666" }}>
+                {garage?.name}
+              </div>
             </div>
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
               <Button icon={<UserOutlined />} />
             </Dropdown>
           </div>
         </Header>
-        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', minHeight: 280 }}>
+        <Content
+          style={{
+            margin: "24px 16px",
+            padding: 24,
+            background: "#fff",
+            minHeight: 280,
+          }}
+        >
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/clients" element={<Clients />} />
@@ -123,6 +137,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       <Route
         path="/*"
         element={

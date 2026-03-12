@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
   Descriptions,
@@ -15,10 +15,16 @@ import {
   Tag,
   DatePicker,
   Select,
-} from 'antd';
-import { ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CheckOutlined } from '@ant-design/icons';
-import { workOrdersApi, servicesApi } from '../api';
-import dayjs from 'dayjs';
+} from "antd";
+import {
+  ArrowLeftOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CheckOutlined,
+} from "@ant-design/icons";
+import { workOrdersApi, servicesApi } from "../api";
+import dayjs from "dayjs";
 
 function WorkOrderDetail() {
   const { id } = useParams();
@@ -32,22 +38,22 @@ function WorkOrderDetail() {
   const [form] = Form.useForm();
   const [completeForm] = Form.useForm();
 
-  useEffect(() => {
-    loadWorkOrder();
-  }, [id]);
-
-  const loadWorkOrder = async () => {
+  const loadWorkOrder = useCallback(async () => {
     setLoading(true);
     try {
       const response = await workOrdersApi.getById(id);
       setWorkOrder(response.data);
       setServices(response.data.services || []);
-    } catch (error) {
-      message.error('Failed to load work order');
+    } catch (_error) {
+      message.error("Failed to load work order");
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadWorkOrder();
+  }, [loadWorkOrder]);
 
   const handleAddService = () => {
     setEditingService(null);
@@ -64,10 +70,10 @@ function WorkOrderDetail() {
   const handleDeleteService = async (serviceId) => {
     try {
       await servicesApi.delete(serviceId);
-      message.success('Service deleted successfully');
+      message.success("Service deleted successfully");
       loadWorkOrder();
-    } catch (error) {
-      message.error('Failed to delete service');
+    } catch (_error) {
+      message.error("Failed to delete service");
     }
   };
 
@@ -79,23 +85,26 @@ function WorkOrderDetail() {
       };
 
       if (editingService) {
-        await servicesApi.update(editingService.id, { ...data, work_order_id: editingService.work_order_id });
-        message.success('Service updated successfully');
+        await servicesApi.update(editingService.id, {
+          ...data,
+          work_order_id: editingService.work_order_id,
+        });
+        message.success("Service updated successfully");
       } else {
         await servicesApi.create(data);
-        message.success('Service added successfully');
+        message.success("Service added successfully");
       }
       setModalVisible(false);
       loadWorkOrder();
-    } catch (error) {
-      message.error('Failed to save service');
+    } catch (_error) {
+      message.error("Failed to save service");
     }
   };
 
   const handleComplete = () => {
     completeForm.setFieldsValue({
       end_datetime: dayjs(),
-      status: 'completed',
+      status: "completed",
     });
     setCompleteModalVisible(true);
   };
@@ -103,52 +112,52 @@ function WorkOrderDetail() {
   const handleCompleteSubmit = async (values) => {
     try {
       await workOrdersApi.update(id, {
-        end_datetime: values.end_datetime.format('YYYY-MM-DD HH:mm:ss'),
+        end_datetime: values.end_datetime.format("YYYY-MM-DD HH:mm:ss"),
         status: values.status,
         notes: values.notes || workOrder.notes,
         total_cost: workOrder.total_cost,
       });
-      message.success('Work order completed successfully');
+      message.success("Work order completed successfully");
       setCompleteModalVisible(false);
       loadWorkOrder();
-    } catch (error) {
-      message.error('Failed to complete work order');
+    } catch (_error) {
+      message.error("Failed to complete work order");
     }
   };
 
   const serviceColumns = [
     {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
     },
     {
-      title: 'Quantity',
-      dataIndex: 'quantity',
-      key: 'quantity',
+      title: "Quantity",
+      dataIndex: "quantity",
+      key: "quantity",
     },
     {
-      title: 'Unit Price',
-      dataIndex: 'unit_price',
-      key: 'unit_price',
-      render: (price) => `$${price.toFixed(2)}`,
+      title: "Unit Price",
+      dataIndex: "unit_price",
+      key: "unit_price",
+      render: (price) => `$${parseFloat(price || 0).toFixed(2)}`,
     },
     {
-      title: 'Total',
-      dataIndex: 'total_price',
-      key: 'total_price',
-      render: (price) => `$${price.toFixed(2)}`,
+      title: "Total",
+      dataIndex: "total_price",
+      key: "total_price",
+      render: (price) => `$${parseFloat(price || 0).toFixed(2)}`,
     },
     {
-      title: 'Actions',
-      key: 'actions',
+      title: "Actions",
+      key: "actions",
       render: (_, record) => (
         <Space>
           <Button
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEditService(record)}
-            disabled={workOrder?.status === 'completed'}
+            disabled={workOrder?.status === "completed"}
           >
             Edit
           </Button>
@@ -157,13 +166,13 @@ function WorkOrderDetail() {
             onConfirm={() => handleDeleteService(record.id)}
             okText="Yes"
             cancelText="No"
-            disabled={workOrder?.status === 'completed'}
+            disabled={workOrder?.status === "completed"}
           >
             <Button
               type="link"
               danger
               icon={<DeleteOutlined />}
-              disabled={workOrder?.status === 'completed'}
+              disabled={workOrder?.status === "completed"}
             >
               Delete
             </Button>
@@ -180,7 +189,10 @@ function WorkOrderDetail() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/work-orders')}>
+        <Button
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate("/work-orders")}
+        >
           Back to Work Orders
         </Button>
       </div>
@@ -189,11 +201,15 @@ function WorkOrderDetail() {
         title={`Work Order: ${workOrder.bill_number}`}
         extra={
           <Space>
-            <Tag color={workOrder.status === 'completed' ? 'green' : 'blue'}>
-              {workOrder.status === 'in_progress' ? 'In Progress' : 'Completed'}
+            <Tag color={workOrder.status === "completed" ? "green" : "blue"}>
+              {workOrder.status === "in_progress" ? "In Progress" : "Completed"}
             </Tag>
-            {workOrder.status === 'in_progress' && (
-              <Button type="primary" icon={<CheckOutlined />} onClick={handleComplete}>
+            {workOrder.status === "in_progress" && (
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
+                onClick={handleComplete}
+              >
                 Complete Work Order
               </Button>
             )}
@@ -201,21 +217,31 @@ function WorkOrderDetail() {
         }
       >
         <Descriptions bordered column={2}>
-          <Descriptions.Item label="Client">{workOrder.client_name}</Descriptions.Item>
-          <Descriptions.Item label="Phone">{workOrder.client_phone}</Descriptions.Item>
+          <Descriptions.Item label="Client">
+            {workOrder.client_name}
+          </Descriptions.Item>
+          <Descriptions.Item label="Phone">
+            {workOrder.client_phone}
+          </Descriptions.Item>
           <Descriptions.Item label="Car">
             {workOrder.plate} - {workOrder.brand} {workOrder.model}
           </Descriptions.Item>
-          <Descriptions.Item label="Employee">{workOrder.employee_name}</Descriptions.Item>
+          <Descriptions.Item label="Employee">
+            {workOrder.employee_name}
+          </Descriptions.Item>
           <Descriptions.Item label="Start Date">
-            {dayjs(workOrder.start_datetime).format('DD/MM/YYYY HH:mm')}
+            {dayjs(workOrder.start_datetime).format("DD/MM/YYYY HH:mm")}
           </Descriptions.Item>
           <Descriptions.Item label="End Date">
-            {workOrder.end_datetime ? dayjs(workOrder.end_datetime).format('DD/MM/YYYY HH:mm') : 'In Progress'}
+            {workOrder.end_datetime
+              ? dayjs(workOrder.end_datetime).format("DD/MM/YYYY HH:mm")
+              : "In Progress"}
           </Descriptions.Item>
           <Descriptions.Item label="Total Cost" span={2}>
-            <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff' }}>
-              ${workOrder.total_cost?.toFixed(2) || '0.00'}
+            <span
+              style={{ fontSize: "20px", fontWeight: "bold", color: "#1890ff" }}
+            >
+              ${parseFloat(workOrder.total_cost || 0).toFixed(2)}
             </span>
           </Descriptions.Item>
           {workOrder.notes && (
@@ -230,8 +256,12 @@ function WorkOrderDetail() {
         title="Services"
         style={{ marginTop: 24 }}
         extra={
-          workOrder.status === 'in_progress' && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddService}>
+          workOrder.status === "in_progress" && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAddService}
+            >
               Add Service
             </Button>
           )
@@ -244,7 +274,10 @@ function WorkOrderDetail() {
           loading={loading}
           pagination={false}
           summary={(pageData) => {
-            const total = pageData.reduce((sum, record) => sum + record.total_price, 0);
+            const total = pageData.reduce(
+              (sum, record) => sum + parseFloat(record.total_price || 0),
+              0,
+            );
             return (
               <Table.Summary.Row>
                 <Table.Summary.Cell colSpan={3}>
@@ -261,7 +294,7 @@ function WorkOrderDetail() {
       </Card>
 
       <Modal
-        title={editingService ? 'Edit Service' : 'Add Service'}
+        title={editingService ? "Edit Service" : "Add Service"}
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={() => form.submit()}
@@ -270,27 +303,29 @@ function WorkOrderDetail() {
           <Form.Item
             name="description"
             label="Description"
-            rules={[{ required: true, message: 'Please enter service description' }]}
+            rules={[
+              { required: true, message: "Please enter service description" },
+            ]}
           >
             <Input placeholder="Oil change, brake repair, etc." />
           </Form.Item>
           <Form.Item
             name="quantity"
             label="Quantity"
-            rules={[{ required: true, message: 'Please enter quantity' }]}
+            rules={[{ required: true, message: "Please enter quantity" }]}
           >
-            <InputNumber min={1} style={{ width: '100%' }} />
+            <InputNumber min={1} style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item
             name="unit_price"
             label="Unit Price"
-            rules={[{ required: true, message: 'Please enter unit price' }]}
+            rules={[{ required: true, message: "Please enter unit price" }]}
           >
             <InputNumber
               min={0}
               step={0.01}
               precision={2}
-              style={{ width: '100%' }}
+              style={{ width: "100%" }}
               prefix="$"
             />
           </Form.Item>
@@ -303,22 +338,28 @@ function WorkOrderDetail() {
         onCancel={() => setCompleteModalVisible(false)}
         onOk={() => completeForm.submit()}
       >
-        <Form form={completeForm} layout="vertical" onFinish={handleCompleteSubmit}>
+        <Form
+          form={completeForm}
+          layout="vertical"
+          onFinish={handleCompleteSubmit}
+        >
           <Form.Item
             name="end_datetime"
             label="End Date & Time"
-            rules={[{ required: true, message: 'Please select end date and time' }]}
+            rules={[
+              { required: true, message: "Please select end date and time" },
+            ]}
           >
             <DatePicker
               showTime
               format="DD/MM/YYYY HH:mm"
-              style={{ width: '100%' }}
+              style={{ width: "100%" }}
             />
           </Form.Item>
           <Form.Item
             name="status"
             label="Status"
-            rules={[{ required: true, message: 'Please select status' }]}
+            rules={[{ required: true, message: "Please select status" }]}
           >
             <Select>
               <Select.Option value="completed">Completed</Select.Option>

@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Card, Alert, Typography } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { useAuth } from '../context/AuthContext';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Form, Input, Button, Card, Alert, Typography } from "antd";
+import { UserOutlined, LockOutlined } from "@ant-design/icons";
+import { useAuth } from "../context/AuthContext";
 
 const { Title } = Typography;
 
@@ -20,7 +20,7 @@ function Login() {
     const result = await login(values.email, values.password);
 
     if (result.success) {
-      navigate('/');
+      navigate("/");
     } else {
       setError(result.error);
     }
@@ -29,27 +29,27 @@ function Login() {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      }}
+    >
       <Card
         style={{
           width: 400,
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🚗</div>
           <Title level={2} style={{ margin: 0 }}>
             Garage Management
           </Title>
-          <p style={{ color: '#666', marginTop: 8 }}>
-            Sign in to your account
-          </p>
+          <p style={{ color: "#666", marginTop: 8 }}>Sign in to your account</p>
         </div>
 
         {error && (
@@ -73,8 +73,8 @@ function Login() {
           <Form.Item
             name="email"
             rules={[
-              { required: true, message: 'Please input your email' },
-              { type: 'email', message: 'Please enter a valid email' }
+              { required: true, message: "Please input your email" },
+              { type: "email", message: "Please enter a valid email" },
             ]}
           >
             <Input
@@ -86,9 +86,7 @@ function Login() {
 
           <Form.Item
             name="password"
-            rules={[
-              { required: true, message: 'Please input your password' }
-            ]}
+            rules={[{ required: true, message: "Please input your password" }]}
           >
             <Input.Password
               prefix={<LockOutlined />}
@@ -108,6 +106,15 @@ function Login() {
               Sign In
             </Button>
           </Form.Item>
+
+          <div style={{ textAlign: "center", marginTop: 16 }}>
+            <span style={{ color: "#666" }}>
+              Don't have an account?{" "}
+              <Link to="/signup" style={{ color: "#667eea" }}>
+                Sign Up
+              </Link>
+            </span>
+          </div>
         </Form>
       </Card>
     </div>

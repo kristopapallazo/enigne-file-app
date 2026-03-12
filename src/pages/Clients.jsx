@@ -19,7 +19,7 @@ function Clients() {
     try {
       const response = await clientsApi.getAll();
       setClients(response.data);
-    } catch (error) {
+    } catch (_error) {
       message.error('Failed to load clients');
     } finally {
       setLoading(false);
@@ -43,7 +43,7 @@ function Clients() {
       await clientsApi.delete(id);
       message.success('Client deleted successfully');
       loadClients();
-    } catch (error) {
+    } catch (_error) {
       message.error('Failed to delete client');
     }
   };
@@ -59,7 +59,7 @@ function Clients() {
       }
       setModalVisible(false);
       loadClients();
-    } catch (error) {
+    } catch (_error) {
       message.error('Failed to save client');
     }
   };

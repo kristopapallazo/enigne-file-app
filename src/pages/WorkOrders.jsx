@@ -32,7 +32,7 @@ function WorkOrders() {
       setCars(carsRes.data);
       setClients(clientsRes.data);
       setEmployees(employeesRes.data);
-    } catch (error) {
+    } catch (_error) {
       message.error('Failed to load data');
     } finally {
       setLoading(false);
@@ -62,7 +62,7 @@ function WorkOrders() {
       message.success('Work order created successfully');
       setModalVisible(false);
       loadData();
-    } catch (error) {
+    } catch (_error) {
       message.error('Failed to create work order');
     }
   };
@@ -121,7 +121,7 @@ function WorkOrders() {
       title: 'Total Cost',
       dataIndex: 'total_cost',
       key: 'total_cost',
-      render: (cost) => `$${cost?.toFixed(2) || '0.00'}`,
+      render: (cost) => `$${parseFloat(cost || 0).toFixed(2)}`,
     },
     {
       title: 'Actions',

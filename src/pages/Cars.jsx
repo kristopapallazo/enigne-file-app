@@ -1,7 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Space, Popconfirm, InputNumber } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
-import { carsApi, clientsApi } from '../api';
+import { useState, useEffect } from "react";
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  message,
+  Space,
+  Popconfirm,
+  InputNumber,
+} from "antd";
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
+import { carsApi, clientsApi } from "../api";
 
 function Cars() {
   const [cars, setCars] = useState([]);
@@ -9,7 +25,7 @@ function Cars() {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCar, setEditingCar] = useState(null);
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -22,8 +38,8 @@ function Cars() {
     try {
       const response = await carsApi.getAll();
       setCars(response.data);
-    } catch (error) {
-      message.error('Failed to load cars');
+    } catch (_error) {
+      message.error("Failed to load cars");
     } finally {
       setLoading(false);
     }
@@ -33,8 +49,8 @@ function Cars() {
     try {
       const response = await clientsApi.getAll();
       setClients(response.data);
-    } catch (error) {
-      message.error('Failed to load clients');
+    } catch (_error) {
+      message.error("Failed to load clients");
     }
   };
 
@@ -47,8 +63,8 @@ function Cars() {
     try {
       const response = await carsApi.search(searchText);
       setCars(response.data);
-    } catch (error) {
-      message.error('Failed to search cars');
+    } catch (_error) {
+      message.error("Failed to search cars");
     } finally {
       setLoading(false);
     }
@@ -69,10 +85,10 @@ function Cars() {
   const handleDelete = async (id) => {
     try {
       await carsApi.delete(id);
-      message.success('Car deleted successfully');
+      message.success("Car deleted successfully");
       loadCars();
-    } catch (error) {
-      message.error('Failed to delete car');
+    } catch (_error) {
+      message.error("Failed to delete car");
     }
   };
 
@@ -80,48 +96,48 @@ function Cars() {
     try {
       if (editingCar) {
         await carsApi.update(editingCar.id, values);
-        message.success('Car updated successfully');
+        message.success("Car updated successfully");
       } else {
         await carsApi.create(values);
-        message.success('Car created successfully');
+        message.success("Car created successfully");
       }
       setModalVisible(false);
       loadCars();
-    } catch (error) {
-      message.error('Failed to save car');
+    } catch (_error) {
+      message.error("Failed to save car");
     }
   };
 
   const columns = [
     {
-      title: 'Plate',
-      dataIndex: 'plate',
-      key: 'plate',
+      title: "Plate",
+      dataIndex: "plate",
+      key: "plate",
       sorter: (a, b) => a.plate.localeCompare(b.plate),
     },
     {
-      title: 'Brand',
-      dataIndex: 'brand',
-      key: 'brand',
+      title: "Brand",
+      dataIndex: "brand",
+      key: "brand",
     },
     {
-      title: 'Model',
-      dataIndex: 'model',
-      key: 'model',
+      title: "Model",
+      dataIndex: "model",
+      key: "model",
     },
     {
-      title: 'Year',
-      dataIndex: 'year',
-      key: 'year',
+      title: "Year",
+      dataIndex: "year",
+      key: "year",
     },
     {
-      title: 'Owner',
-      dataIndex: 'client_name',
-      key: 'client_name',
+      title: "Owner",
+      dataIndex: "client_name",
+      key: "client_name",
     },
     {
-      title: 'Actions',
-      key: 'actions',
+      title: "Actions",
+      key: "actions",
       render: (_, record) => (
         <Space>
           <Button
@@ -148,7 +164,14 @@ function Cars() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <h2>Cars</h2>
         <Space>
           <Input
@@ -175,7 +198,7 @@ function Cars() {
       />
 
       <Modal
-        title={editingCar ? 'Edit Car' : 'Add Car'}
+        title={editingCar ? "Edit Car" : "Add Car"}
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={() => form.submit()}
@@ -184,31 +207,35 @@ function Cars() {
           <Form.Item
             name="plate"
             label="Plate Number"
-            rules={[{ required: true, message: 'Please enter plate number' }]}
+            rules={[{ required: true, message: "Please enter plate number" }]}
           >
             <Input placeholder="ABC123" />
           </Form.Item>
           <Form.Item
             name="brand"
             label="Brand"
-            rules={[{ required: true, message: 'Please enter brand' }]}
+            rules={[{ required: true, message: "Please enter brand" }]}
           >
             <Input placeholder="Toyota" />
           </Form.Item>
           <Form.Item
             name="model"
             label="Model"
-            rules={[{ required: true, message: 'Please enter model' }]}
+            rules={[{ required: true, message: "Please enter model" }]}
           >
             <Input placeholder="Corolla" />
           </Form.Item>
           <Form.Item name="year" label="Year">
-            <InputNumber min={1900} max={new Date().getFullYear() + 1} style={{ width: '100%' }} />
+            <InputNumber
+              min={1900}
+              max={new Date().getFullYear() + 1}
+              style={{ width: "100%" }}
+            />
           </Form.Item>
           <Form.Item
             name="client_id"
             label="Owner"
-            rules={[{ required: true, message: 'Please select owner' }]}
+            rules={[{ required: true, message: "Please select owner" }]}
           >
             <Select
               showSearch

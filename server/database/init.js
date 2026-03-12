@@ -8,16 +8,20 @@ let poolInstance = null;
 export const pool = {
   query: async (...args) => {
     if (!poolInstance) {
-      throw new Error('Database pool not initialized. Call initDatabase() first.');
+      throw new Error(
+        "Database pool not initialized. Call initDatabase() first.",
+      );
     }
     return poolInstance.query(...args);
   },
   connect: async () => {
     if (!poolInstance) {
-      throw new Error('Database pool not initialized. Call initDatabase() first.');
+      throw new Error(
+        "Database pool not initialized. Call initDatabase() first.",
+      );
     }
     return poolInstance.connect();
-  }
+  },
 };
 
 export async function initDatabase() {
@@ -32,18 +36,8 @@ export async function initDatabase() {
     });
 
     // Test the connection
-    await poolInstance.query('SELECT NOW()');
-    console.log('✅ Database connection established');
-
-    // Drop existing tables in correct order (reverse of dependencies)
-    await poolInstance.query('DROP TABLE IF EXISTS services CASCADE');
-    await poolInstance.query('DROP TABLE IF EXISTS work_orders CASCADE');
-    await poolInstance.query('DROP TABLE IF EXISTS cars CASCADE');
-    await poolInstance.query('DROP TABLE IF EXISTS employees CASCADE');
-    await poolInstance.query('DROP TABLE IF EXISTS clients CASCADE');
-    await poolInstance.query('DROP TABLE IF EXISTS users CASCADE');
-    await poolInstance.query('DROP TABLE IF EXISTS garages CASCADE');
-    console.log('🗑️ Dropped existing tables');
+    await poolInstance.query("SELECT NOW()");
+    console.log("✅ Database connection established");
 
     // Garages table (tenants/accounts)
     await poolInstance.query(`

@@ -1,6 +1,6 @@
 # 🚗 Car Garage Management System
 
-A modern, full-stack web application for managing car garage operations, built with React, Ant Design, Node.js, Express, and SQLite.
+A modern, full-stack web application for managing car garage operations, built with React, Ant Design, Node.js, Express, and PostgreSQL.
 
 ## 📋 Features
 
@@ -19,6 +19,7 @@ A modern, full-stack web application for managing car garage operations, built w
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React** - UI framework
 - **Ant Design (antd)** - Professional UI components
 - **React Router** - Navigation
@@ -27,29 +28,43 @@ A modern, full-stack web application for managing car garage operations, built w
 - **Vite** - Build tool
 
 ### Backend
+
 - **Node.js & Express** - REST API server
-- **SQLite (better-sqlite3)** - Database
+- **PostgreSQL (pg)** - Database
 - **CORS** - Cross-origin resource sharing
 
 ## 📦 Installation
 
 ### Prerequisites
+
 - Node.js 16+ installed
 - npm or yarn package manager
 
 ### Setup Steps
 
 1. **Clone or navigate to the project directory**
+
    ```powershell
    cd "C:\Users\Kristi Papallazo\workspace\enigne-file-app"
    ```
 
 2. **Install dependencies** (if not already done)
+
    ```powershell
    npm install
    ```
 
-3. **The database will be created automatically on first run**
+3. **Set up your `.env` file with PostgreSQL credentials:**
+
+   ```env
+   DB_USER=postgres
+   DB_PASSWORD=your_password
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_NAME=garage
+   ```
+
+4. **The database tables will be created automatically on first run**
 
 ## 🚀 Running the Application
 
@@ -62,17 +77,20 @@ npm run dev
 ```
 
 This will start:
+
 - **Backend API**: http://localhost:3001
 - **Frontend App**: http://localhost:5173
 
 ### Individual Commands
 
 Run backend only:
+
 ```powershell
 npm run server
 ```
 
 Run frontend only:
+
 ```powershell
 npm run client
 ```
@@ -132,6 +150,7 @@ All tables have proper foreign key relationships and cascading deletes.
 ## 📱 API Endpoints
 
 ### Clients
+
 - `GET /api/clients` - Get all clients
 - `GET /api/clients/:id` - Get client with cars
 - `POST /api/clients` - Create client
@@ -139,6 +158,7 @@ All tables have proper foreign key relationships and cascading deletes.
 - `DELETE /api/clients/:id` - Delete client
 
 ### Cars
+
 - `GET /api/cars` - Get all cars
 - `GET /api/cars/:id` - Get car with history
 - `GET /api/cars/search/:plate` - Search by plate
@@ -147,12 +167,14 @@ All tables have proper foreign key relationships and cascading deletes.
 - `DELETE /api/cars/:id` - Delete car
 
 ### Employees
+
 - `GET /api/employees` - Get all employees
 - `POST /api/employees` - Create employee
 - `PUT /api/employees/:id` - Update employee
 - `DELETE /api/employees/:id` - Delete employee
 
 ### Work Orders
+
 - `GET /api/work-orders` - Get all work orders
 - `GET /api/work-orders/:id` - Get work order with services
 - `POST /api/work-orders` - Create work order
@@ -160,6 +182,7 @@ All tables have proper foreign key relationships and cascading deletes.
 - `DELETE /api/work-orders/:id` - Delete work order
 
 ### Services
+
 - `GET /api/services/work-order/:workOrderId` - Get services for work order
 - `POST /api/services` - Add service
 - `PUT /api/services/:id` - Update service
@@ -171,7 +194,11 @@ Edit `.env` file to configure:
 
 ```env
 PORT=3001
-DATABASE_PATH=./garage.db
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=garage
 ```
 
 ## 📁 Project Structure
@@ -200,38 +227,43 @@ enigne-file-app/
 │   │   └── WorkOrderDetail.jsx
 │   ├── App.jsx            # Main app component
 │   └── main.jsx           # Entry point
-├── garage.db              # SQLite database (auto-created)
 └── package.json           # Dependencies
 ```
 
 ## 🎨 Features Walkthrough
 
 ### Dashboard
+
 - Quick statistics: total clients, cars, employees, active work orders
 - Recent work orders table
 
 ### Clients Page
+
 - Add/Edit/Delete clients
 - View client details with their vehicles
 - Search and sort functionality
 
 ### Cars Page
+
 - Register new vehicles
 - Search by plate number
 - Link cars to owners
 - View service history
 
 ### Employees Page
+
 - Manage staff members
 - Track roles (Mechanic, Manager, etc.)
 
 ### Work Orders Page
+
 - Create new work orders
 - View all past and current orders
 - Filter by status
 - Sort by date
 
 ### Work Order Details
+
 - View complete work order information
 - Add/Edit/Delete services
 - Automatic cost calculation
@@ -240,6 +272,7 @@ enigne-file-app/
 ## 🚀 Future Enhancements
 
 Potential features to add:
+
 - PDF invoice generation
 - Email notifications
 - Parts inventory management
